@@ -1,3 +1,5 @@
+import { Token } from "../types/token"
+
 const TOKENS = [
   {
     type: 'ignore',
@@ -61,22 +63,35 @@ function getToken(source: string): Match | null {
 
 function main(source: string) {
   let content = source
+  let line = 1
+  let column = 1
+
   let cursor = 0
   let lookAheadCursor = 0
 
-  function lookAhead(): Match | null {
+  function lookAhead(): Token | null {
     let slice = content.slice(lookAheadCursor)
     const matched = getToken(slice)
-    if (matched && matched.type === 'ignore') {
+    if (!matched) {
+      return null
+    }
+    if (matched.type === 'ignore') {
       lookAheadCursor += matched.length
       return lookAhead()
     }
-    return matched
+
+    return {
+      type: matched.type || 'eof',
+      value: matched.value || '',
+      line: 0,
+      start: cursor,
+      end: cursor + matched.length || 0,
+    }
   }
   function hasTokens(): Boolean {
     return cursor < content.length
   }
-  function nextToken(): Match | null {
+  function nextToken(): Token | null {
     if (!hasTokens()) {
       return null
     }
@@ -84,16 +99,25 @@ function main(source: string) {
     let slice = content.slice(cursor)
     const matched = getToken(slice)
     if (matched) {
+      column += matched.length
       cursor += matched.length
       lookAheadCursor = cursor
 
+      if (matched.value == '\n') {
+        line++
+        column = 1
+      }
       if (matched.type === 'ignore') {
-        console.log('ignore', matched.value)
         return nextToken()
       }
 
-      console.log('matched', matched.value)
-      return matched
+      return {
+        type: matched.type,
+        value: matched.value,
+        line,
+        start: column - matched.length,
+        end: column,
+      }
     }
 
     return null

@@ -1,4 +1,5 @@
-import { ASTNode } from '../types/ast'
+import { AST, ASTNode, ComponentBlockNode, ComponentNode, FunctionCallNode } from '../types/ast'
+import { Token } from '../types/token'
 import Tokenize from './tokenizer'
 
 function main(source: string) {
@@ -34,29 +35,32 @@ function main(source: string) {
     throw new Error(`Unknown statement ${lookAhead?.value}`)
   }
 
-  function component() {
-    eat('keyword')
+  function component(): ComponentNode {
+    const keyword = eat('keyword')
     const name = eat('identifier')
-    eat('lBracket')
-    const nodes = componentBlock()
+    const block = componentBlock()
 
     return {
       type: 'component',
       value: name.value,
-      children: nodes,
+      block: block,
       root: false,
-      line: 0,
-      start: 0,
-      end: 0,
+      line: keyword.line,
+      start: keyword.start,
+      end: keyword.end,
     }
   }
-  function componentBlock(): ASTNode[] {
+  function componentBlock(): ComponentBlockNode {
+    const lBracket = eat('lBracket')
+
     const nodes: ASTNode[] = []
+    let rBracket: Token | null = null
+
     let closed = false
     while (tokenizer.hasTokens()) {
       const token = tokenizer.lookAhead()
       if (token?.type === 'rBracket') {
-        eat('rBracket')
+        rBracket = eat('rBracket')
         closed = true
         break
       }
@@ -71,42 +75,40 @@ function main(source: string) {
       throw new Error('Expected ) but got EOF')
     }
 
-    return [{
+    return {
       type: 'componentBlock',
-      value: '',
       children: nodes,
       root: false,
-      line: 0,
-      start: 0,
-      end: 0,
-    }]
+      line: lBracket.line,
+      start: lBracket.start,
+      end: rBracket!.end,
+    } as ComponentBlockNode
   }
-  function functionCall(): ASTNode {
+  function functionCall(): FunctionCallNode {
     const name = eat('identifier')
-    eat('lBrace')
+    const lBrace = eat('lBrace')
     const param = eat('string')
-    eat('rBrace')
+    const rBrace = eat('rBrace')
 
     return {
       type: 'functionCall',
       value: name.value,
-      children: [{
+      params: [{
         type: 'string',
         value: param.value,
-        children: [],
         root: false,
         line: 0,
-        start: 0,
-        end: 0,
+        start: param.start,
+        end: param.end,
       }],
       root: false,
       line: 0,
-      start: 0,
-      end: 0,
+      start: lBrace.start,
+      end: rBrace.end,
     }
   }
 
-  function program() {
+  function program(): AST {
     const tokens: ASTNode[] = []
     while (tokenizer.hasTokens()) {
       const statements = statement()
@@ -117,13 +119,8 @@ function main(source: string) {
     }
 
     return {
-      type: 'root',
-      value: '',
-      children: tokens,
       root: true,
-      line: 0,
-      start: 0,
-      end: 0,
+      children: tokens,
     }
   }
 
