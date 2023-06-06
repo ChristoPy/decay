@@ -111,8 +111,10 @@ function main(source: string) {
         start: param.start,
         end: param.end,
       })
-      if (tokenizer.lookAhead()?.type === 'rBrace') {
-        break
+
+      const nextToken = tokenizer.lookAhead()
+      if (nextToken?.type === 'comma') {
+        eat('comma')
       }
     }
 

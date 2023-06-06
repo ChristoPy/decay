@@ -13,7 +13,7 @@ component Button {
 }
 
 view App {
-  Header()
+  Header("123", "456")
   Button()
 }
 `)

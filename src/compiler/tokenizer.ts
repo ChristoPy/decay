@@ -40,6 +40,10 @@ const TOKENS = [
   {
     type: 'rBracket',
     pattern: /^}/,
+  },
+  {
+    type: 'comma',
+    pattern: /^,/,
   }
 ]
 
