@@ -18,6 +18,10 @@ export interface FunctionCallNode extends ASTNode {
   params: ASTNode[]
 }
 
+export interface ViewNode extends ASTNode {
+  block: ComponentBlockNode
+}
+
 export interface AST {
   root: boolean
   children: ASTNode[]
