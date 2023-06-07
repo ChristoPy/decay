@@ -4,16 +4,13 @@ const compiler = Compiler()
 compiler.addFile('src/index.ts', `
 // this is a comment
 
-component Header {
+component Header(title, subtitle) {
   Img("https://example.com/logo.png")
-}
-
-component Button {
-  Text("Hello World")
+  Text(title)
+  Text(subtitle)
 }
 
 view App {
   Header("123", "456")
-  Button()
 }
 `)

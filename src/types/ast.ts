@@ -1,13 +1,13 @@
 export interface ASTNode {
   type: string
   value?: string
-  root: boolean
   line: number
   start: number
   end: number
 }
 
 export interface ComponentNode extends ASTNode {
+  params: ASTNode[]
   block: ComponentBlockNode
 }
 export interface ComponentBlockNode extends ASTNode {

@@ -16,6 +16,17 @@ function main(source: string) {
 
     throw new Error(`Expected ${type} but got ${token?.type}`)
   }
+  function eatOr(left: string, right: string) {
+    const token = tokenizer.nextToken()
+    if (token && (token.type === left || token.type === right)) {
+      return token
+    }
+    if (!token) {
+      throw new Error(`Expected ${left} or ${right} but got EOF`)
+    }
+
+    throw new Error(`Expected ${left} or ${right} but got ${token?.type}`)
+  }
 
   function statement() {
     const lookAhead = tokenizer.lookAhead()
@@ -40,18 +51,57 @@ function main(source: string) {
   function component(): ComponentNode {
     const keyword = eat('keyword')
     const name = eat('identifier')
+    const params = componentParams()
     const block = componentBlock()
 
     return {
       type: 'component',
       value: name.value,
+      params: params,
       block: block,
-      root: false,
       line: keyword.line,
       start: keyword.start,
       end: keyword.end,
     }
   }
+  function componentParams(): ASTNode[] {
+    if (tokenizer.lookAhead()?.type !== 'lBrace') {
+      return []
+    }
+
+    let params: ASTNode[] = []
+    eat('lBrace')
+
+    while (tokenizer.hasTokens()) {
+      const token = tokenizer.lookAhead()
+      if (token?.type === 'rBrace') {
+        break
+      }
+
+      const param = eat('identifier')
+      if (!param) {
+        break
+      }
+
+      params.push({
+        type: 'identifier',
+        value: param.value,
+        line: 0,
+        start: param.start,
+        end: param.end,
+      })
+
+      const nextToken = tokenizer.lookAhead()
+      if (nextToken?.type === 'comma') {
+        eat('comma')
+      }
+    }
+
+    eat('rBrace')
+
+    return params
+  }
+
   function componentBlock(): ComponentBlockNode {
     const lBracket = eat('lBracket')
 
@@ -80,7 +130,6 @@ function main(source: string) {
     return {
       type: 'componentBlock',
       children: nodes,
-      root: false,
       line: lBracket.line,
       start: lBracket.start,
       end: rBracket!.end,
@@ -98,15 +147,14 @@ function main(source: string) {
         break
       }
 
-      const param = eat('string')
+      const param = eatOr('string', 'identifier')
       if (!param) {
         break
       }
 
       params.push({
-        type: 'string',
+        type: param.type,
         value: param.value,
-        root: false,
         line: 0,
         start: param.start,
         end: param.end,
@@ -124,7 +172,6 @@ function main(source: string) {
       type: 'functionCall',
       value: name.value,
       params: params,
-      root: false,
       line: 0,
       start: lBrace.start,
       end: rBrace.end,
@@ -140,7 +187,6 @@ function main(source: string) {
       type: 'view',
       value: name.value,
       block: block,
-      root: false,
       line: keyword.line,
       start: keyword.start,
       end: keyword.end,
@@ -174,7 +220,6 @@ function main(source: string) {
     return {
       type: 'viewBlock',
       children: nodes,
-      root: false,
       line: lBracket.line,
       start: lBracket.start,
       end: rBracket!.end,
