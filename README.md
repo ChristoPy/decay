@@ -2,7 +2,7 @@
 <h1>Decay 🍂</h1>
 <p>Embrace the beauty of simplicity</p>
 
-[Docs](./DOCS.md)
+[Docs](./docs.md)
 </div>
 
 # Decay
