@@ -26,3 +26,27 @@ export interface AST {
   root: boolean
   children: ASTNode[]
 }
+
+// ===============
+
+
+export interface Meta {
+  keywordPosition: [number, number],
+  namePosition: [number, number],
+  closeBracePosition: [number, number],
+}
+
+export interface ComponentMeta extends Meta {
+  openBracePosition: [number, number],
+}
+
+export interface ComponentAST {
+  name: 'component'
+  params: {}
+  body: []
+  meta: ComponentMeta
+}
+
+export interface FinalAST {
+  body: ComponentAST[]
+}
