@@ -23,7 +23,7 @@ test('detect a token', () => {
   expect(tokenize.lookAhead()).toBe(null)
 })
 
-test.only('break if a not defined token', () => {
+test('break if a not defined token', () => {
   const tokenize = tokenizer('-')
   expect(tokenize.hasTokens()).toBe(true)
   expect(tokenize.nextToken()).toBe(null)
