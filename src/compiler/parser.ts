@@ -33,13 +33,17 @@ function main(source: string) {
       return null
     }
 
+    const lookup = {
+      'component': component
+    }
+
     if (lookAhead.type === 'keyword') {
-      switch (lookAhead.value) {
-        case 'component':
-          return component()
-        default:
-          throw new Error(`Unknown keyword ${lookAhead.value}`)
+      const statementMethod = lookup[lookAhead.value]
+      if (!statementMethod) {
+        throw new Error(`Unknown keyword ${lookAhead.value}`)
       }
+
+      return statementMethod()
     }
 
     throw new Error(`Unknown statement ${lookAhead?.value}`)

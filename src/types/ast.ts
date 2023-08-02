@@ -33,12 +33,13 @@ export interface AST {
 export interface Meta {
   keywordPosition: [number, number],
   namePosition: [number, number],
-  closeBracePosition: [number, number],
+  openParamPosition: [number, number],
+  closeParamPosition: [number, number],
+  openBodyPosition: [number, number],
+  closeBodyPosition: [number, number],
 }
 
-export interface ComponentMeta extends Meta {
-  openBracePosition: [number, number],
-}
+export interface ComponentMeta extends Meta {}
 
 export interface ComponentAST {
   name: 'component'
