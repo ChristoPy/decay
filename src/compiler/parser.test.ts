@@ -110,3 +110,26 @@ test('component with multiple params AST with dangling comma', () => {
 
   expect(result.body[0]).toStrictEqual(expected)
 })
+
+test('compponent fail to parse with any wrong syntax', () => {
+  expect(() => {
+    const parse = parser('component')
+    parse.program()
+  }).toThrowError('Expected identifier but got EOF')
+  expect(() => {
+    const parse = parser('component example')
+    parse.program()
+  }).toThrowError('Expected lBrace but got EOF')
+  expect(() => {
+    const parse = parser('component example (,')
+    parse.program()
+  }).toThrowError('Expected identifier but got comma')
+  expect(() => {
+    const parse = parser('component example ()')
+    parse.program()
+  }).toThrowError('Expected lBracket but got EOF')
+  expect(() => {
+    const parse = parser('component example () {')
+    parse.program()
+  }).toThrowError('Expected rBracket but got EOF')
+})
