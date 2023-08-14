@@ -82,3 +82,31 @@ test('component with multiple params AST', () => {
 
   expect(result.body[0]).toStrictEqual(expected)
 })
+
+test('component with multiple params AST with dangling comma', () => {
+  const parse = parser('component example (name, example,) {}')
+  const result = parse.program()
+
+  const expected: ComponentAST = {
+    name: 'component',
+    params: {
+      name: {
+        position: [1, 20]
+      },
+      example: {
+        position: [1, 26]
+      }
+    },
+    body: [],
+    meta: {
+      keywordPosition: [1, 1],
+      namePosition: [1, 11],
+      openParamPosition: [1, 19],
+      closeParamPosition: [1, 34],
+      openBodyPosition: [1, 36],
+      closeBodyPosition: [1, 37],
+    }
+  }
+
+  expect(result.body[0]).toStrictEqual(expected)
+})
