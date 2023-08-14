@@ -32,15 +32,16 @@ export interface AST {
 export type TokenPosition = [number, number]
 
 export interface Meta {
-  keywordPosition: TokenPosition,
-  namePosition: TokenPosition,
-  openParamPosition: TokenPosition,
-  closeParamPosition: TokenPosition,
-  openBodyPosition: TokenPosition,
-  closeBodyPosition: TokenPosition,
+  namePosition: TokenPosition
+  openParamPosition: TokenPosition
+  closeParamPosition: TokenPosition
 }
 
-export interface ComponentMeta extends Meta {}
+export interface ComponentMeta extends Meta {
+  keywordPosition: TokenPosition
+  openBodyPosition: TokenPosition
+  closeBodyPosition: TokenPosition
+}
 
 export interface ComponentParams {
   [key: string]: {
@@ -48,10 +49,14 @@ export interface ComponentParams {
   }
 }
 
+export interface ComponentCall {
+  meta: Meta
+}
+
 export interface ComponentAST {
   name: 'component'
   params: ComponentParams
-  body: []
+  body: ComponentCall[]
   meta: ComponentMeta
 }
 
