@@ -29,21 +29,28 @@ export interface AST {
 
 // ===============
 
+export type TokenPosition = [number, number]
 
 export interface Meta {
-  keywordPosition: [number, number],
-  namePosition: [number, number],
-  openParamPosition: [number, number],
-  closeParamPosition: [number, number],
-  openBodyPosition: [number, number],
-  closeBodyPosition: [number, number],
+  keywordPosition: TokenPosition,
+  namePosition: TokenPosition,
+  openParamPosition: TokenPosition,
+  closeParamPosition: TokenPosition,
+  openBodyPosition: TokenPosition,
+  closeBodyPosition: TokenPosition,
 }
 
 export interface ComponentMeta extends Meta {}
 
+export interface ComponentParams {
+  [key: string]: {
+    position: TokenPosition
+  }
+}
+
 export interface ComponentAST {
   name: 'component'
-  params: {}
+  params: ComponentParams
   body: []
   meta: ComponentMeta
 }

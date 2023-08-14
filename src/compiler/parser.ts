@@ -1,4 +1,4 @@
-import { ComponentAST, FinalAST } from '../types/ast'
+import { ComponentAST, ComponentParams, FinalAST, TokenPosition } from '../types/ast'
 import Tokenize from './tokenizer'
 
 function main(source: string) {
@@ -52,23 +52,47 @@ function main(source: string) {
   function component(): ComponentAST {
     const keyword = eat('keyword')
     const name = eat('identifier')
-    const paramStart = eat('lBrace')
-    const paramEnd = eat('rBrace')
+    const params = componentParams()
     const blockStart = eat('lBracket')
     const blockEnd = eat('rBracket')
 
     return {
       name: 'component',
-      params: {},
+      params: params.params,
       body: [],
       meta: {
         keywordPosition: [keyword.line, keyword.start],
         namePosition: [name.line, name.start],
-        openParamPosition: [paramStart.line, paramStart.start],
-        closeParamPosition: [paramEnd.line, paramEnd.start],
+        openParamPosition: params.openParamPosition,
+        closeParamPosition: params.closeParamPosition,
         openBodyPosition: [blockStart.line, blockStart.start],
         closeBodyPosition: [blockEnd.line, blockEnd.start],
       }
+    }
+  }
+  function componentParams() {
+    let params: ComponentParams = {}
+    const paramStart = eat('lBrace')
+    let lookAhead = tokenizer.lookAhead()
+
+    while(lookAhead && lookAhead.type != 'rBrace') {
+      const param = eat('identifier')
+      params[param.value] = {
+        position: [param.line, param.start]
+      }
+      lookAhead = tokenizer.lookAhead()
+
+      if (lookAhead && lookAhead.type === 'comma') {
+        eat('comma')
+      }
+      lookAhead = tokenizer.lookAhead()
+    }
+    const paramEnd = eat('rBrace')
+
+    return {
+      openParamPosition: [paramStart.line, paramStart.start] as TokenPosition,
+      closeParamPosition: [paramEnd.line, paramEnd.start] as TokenPosition,
+      params
     }
   }
 
