@@ -49,7 +49,14 @@ export interface ComponentParams {
   }
 }
 
+export interface ComponentCallParams {
+  name: string
+  value: any
+  position: TokenPosition
+}
 export interface ComponentCall {
+  name: 'componentCall',
+  params: ComponentCallParams[]
   meta: Meta
 }
 

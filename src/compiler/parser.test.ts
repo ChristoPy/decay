@@ -111,6 +111,39 @@ test('component with multiple params AST with dangling comma', () => {
   expect(result.body[0]).toStrictEqual(expected)
 })
 
+test('component with an empty component call', () => {
+  const parse = parser(`component example () {
+  Text()
+}`)
+  const result = parse.program()
+
+  const expected: ComponentAST = {
+    name: 'component',
+    params: {},
+    body: [
+      {
+        name: 'componentCall',
+        params: [],
+        meta: {
+          namePosition: [2, 3],
+          openParamPosition: [2, 7],
+          closeParamPosition: [2, 8],
+        }
+      }
+    ],
+    meta: {
+      keywordPosition: [1, 1],
+      namePosition: [1, 11],
+      openParamPosition: [1, 19],
+      closeParamPosition: [1, 20],
+      openBodyPosition: [1, 22],
+      closeBodyPosition: [3, 1],
+    }
+  }
+
+  expect(result.body[0]).toStrictEqual(expected)
+})
+
 test('compponent fail to parse with any wrong syntax', () => {
   expect(() => {
     const parse = parser('component')

@@ -1,4 +1,4 @@
-import { ComponentAST, ComponentParams, FinalAST, TokenPosition } from '../types/ast'
+import { ComponentAST, ComponentCall, ComponentParams, FinalAST, TokenPosition } from '../types/ast'
 import Tokenize from './tokenizer'
 
 function main(source: string) {
@@ -53,20 +53,19 @@ function main(source: string) {
     const keyword = eat('keyword')
     const name = eat('identifier')
     const params = componentParams()
-    const blockStart = eat('lBracket')
-    const blockEnd = eat('rBracket')
+    const calls = componentBlock()
 
     return {
       name: 'component',
       params: params.params,
-      body: [],
+      body: calls.calls,
       meta: {
         keywordPosition: [keyword.line, keyword.start],
         namePosition: [name.line, name.start],
         openParamPosition: params.openParamPosition,
         closeParamPosition: params.closeParamPosition,
-        openBodyPosition: [blockStart.line, blockStart.start],
-        closeBodyPosition: [blockEnd.line, blockEnd.start],
+        openBodyPosition: calls.openBlockPosition,
+        closeBodyPosition: calls.closeBlockPosition,
       }
     }
   }
@@ -93,6 +92,45 @@ function main(source: string) {
       openParamPosition: [paramStart.line, paramStart.start] as TokenPosition,
       closeParamPosition: [paramEnd.line, paramEnd.start] as TokenPosition,
       params
+    }
+  }
+  function componentBlock() {
+    let calls: ComponentCall[] = []
+    const blockStart = eat('lBracket')
+    let lookAhead = tokenizer.lookAhead()
+
+    while (lookAhead && lookAhead.type != 'rBracket') {
+      const call = componentCall()
+      calls.push(call)
+
+      lookAhead = tokenizer.lookAhead()
+
+      if (lookAhead && lookAhead.type === 'comma') {
+        eat('comma')
+      }
+      lookAhead = tokenizer.lookAhead()
+    }
+    const blockEnd = eat('rBracket')
+
+    return {
+      calls,
+      openBlockPosition: [blockStart.line, blockStart.start] as TokenPosition,
+      closeBlockPosition: [blockEnd.line, blockEnd.start] as TokenPosition,
+    }
+  }
+  function componentCall(): ComponentCall {
+    const name = eat('identifier')
+    const paramStart = eat('lBrace')
+    const paramEnd = eat('rBrace')
+
+    return {
+      name: 'componentCall',
+      params: [],
+      meta: {
+        namePosition: [name.line, name.start],
+        openParamPosition: [paramStart.line, paramStart.start],
+        closeParamPosition: [paramEnd.line, paramEnd.start]
+      }
     }
   }
 
