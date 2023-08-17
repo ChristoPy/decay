@@ -55,13 +55,15 @@ export interface ComponentCallParams {
   position: TokenPosition
 }
 export interface ComponentCall {
-  name: 'componentCall',
+  kind: 'componentCall'
+  name: string
   params: ComponentCallParams[]
   meta: Meta
 }
 
 export interface ComponentAST {
-  name: 'component'
+  kind: 'component'
+  name: string
   params: ComponentParams
   body: ComponentCall[]
   meta: ComponentMeta

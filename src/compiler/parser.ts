@@ -56,7 +56,8 @@ function main(source: string) {
     const calls = componentBlock()
 
     return {
-      name: 'component',
+      kind: 'component',
+      name: name.value,
       params: params.params,
       body: calls.calls,
       meta: {
@@ -124,7 +125,8 @@ function main(source: string) {
     const paramEnd = eat('rBrace')
 
     return {
-      name: 'componentCall',
+      kind: 'componentCall',
+      name: name.value,
       params: [],
       meta: {
         namePosition: [name.line, name.start],

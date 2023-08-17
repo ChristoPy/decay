@@ -14,7 +14,8 @@ test('empty component AST', () => {
   const result = parse.program()
 
   const expected: ComponentAST = {
-    name: 'component',
+    kind: 'component',
+    name: 'example',
     params: {},
     body: [],
     meta: {
@@ -35,7 +36,8 @@ test('component with a param AST', () => {
   const result = parse.program()
 
   const expected: ComponentAST = {
-    name: 'component',
+    kind: 'component',
+    name: 'example',
     params: {
       name: {
         position: [1, 20]
@@ -60,7 +62,8 @@ test('component with multiple params AST', () => {
   const result = parse.program()
 
   const expected: ComponentAST = {
-    name: 'component',
+    kind: 'component',
+    name: 'example',
     params: {
       name: {
         position: [1, 20]
@@ -88,7 +91,8 @@ test('component with multiple params AST with dangling comma', () => {
   const result = parse.program()
 
   const expected: ComponentAST = {
-    name: 'component',
+    kind: 'component',
+    name: 'example',
     params: {
       name: {
         position: [1, 20]
@@ -118,11 +122,13 @@ test('component with an empty component call', () => {
   const result = parse.program()
 
   const expected: ComponentAST = {
-    name: 'component',
+    kind: 'component',
+    name: 'example',
     params: {},
     body: [
       {
-        name: 'componentCall',
+        kind: 'componentCall',
+        name: 'Text',
         params: [],
         meta: {
           namePosition: [2, 3],
