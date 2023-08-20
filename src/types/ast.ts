@@ -43,14 +43,16 @@ export interface ComponentMeta extends Meta {
   closeBodyPosition: TokenPosition
 }
 
+export interface ComponentParam {
+  position: TokenPosition
+}
+
 export interface ComponentParams {
-  [key: string]: {
-    position: TokenPosition
-  }
+  [key: string]: ComponentParam
 }
 
 export interface ComponentCallParams {
-  name: string
+  kind: 'string'
   value: any
   position: TokenPosition
 }

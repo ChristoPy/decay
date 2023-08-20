@@ -150,6 +150,47 @@ test('component with an empty component call', () => {
   expect(result.body[0]).toStrictEqual(expected)
 })
 
+test('component with an component call with string arg', () => {
+  const parse = parser(`component example () {
+  Text("hi")
+}`)
+  const result = parse.program()
+
+  const expected: ComponentAST = {
+    kind: 'component',
+    name: 'example',
+    params: {},
+    body: [
+      {
+        kind: 'componentCall',
+        name: 'Text',
+        params: [
+          {
+            kind: 'string',
+            value: '"hi"',
+            position: [2, 8],
+          }
+        ],
+        meta: {
+          namePosition: [2, 3],
+          openParamPosition: [2, 7],
+          closeParamPosition: [2, 12],
+        }
+      }
+    ],
+    meta: {
+      keywordPosition: [1, 1],
+      namePosition: [1, 11],
+      openParamPosition: [1, 19],
+      closeParamPosition: [1, 20],
+      openBodyPosition: [1, 22],
+      closeBodyPosition: [3, 1],
+    }
+  }
+
+  expect(result.body[0]).toStrictEqual(expected)
+})
+
 test('compponent fail to parse with any wrong syntax', () => {
   expect(() => {
     const parse = parser('component')

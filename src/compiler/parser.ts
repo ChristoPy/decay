@@ -1,4 +1,5 @@
-import { ComponentAST, ComponentCall, ComponentParams, FinalAST, TokenPosition } from '../types/ast'
+import { ComponentAST, ComponentCall, ComponentCallParams, ComponentParam, ComponentParams, FinalAST, TokenPosition } from '../types/ast'
+import { Token } from '../types/token'
 import Tokenize from './tokenizer'
 
 function main(source: string) {
@@ -15,16 +16,19 @@ function main(source: string) {
 
     throw new Error(`Expected ${type} but got ${token?.type}`)
   }
-  function eatOr(left: string, right: string) {
-    const token = tokenizer.nextToken()
-    if (token && (token.type === left || token.type === right)) {
-      return token
-    }
-    if (!token) {
-      throw new Error(`Expected ${left} or ${right} but got EOF`)
-    }
+  function eatUntil(limiter: string, predicate: string, callback: (x: Token) => void) {
+    let lookAhead = tokenizer.lookAhead()
 
-    throw new Error(`Expected ${left} or ${right} but got ${token?.type}`)
+    while(lookAhead && lookAhead.type != limiter) {
+      const param = eat(predicate)
+      callback(param)
+      lookAhead = tokenizer.lookAhead()
+
+      if (lookAhead && lookAhead.type === 'comma') {
+        eat('comma')
+      }
+      lookAhead = tokenizer.lookAhead()
+    }
   }
 
   function statement() {
@@ -72,21 +76,13 @@ function main(source: string) {
   }
   function componentParams() {
     let params: ComponentParams = {}
-    const paramStart = eat('lBrace')
-    let lookAhead = tokenizer.lookAhead()
 
-    while(lookAhead && lookAhead.type != 'rBrace') {
-      const param = eat('identifier')
+    const paramStart = eat('lBrace')
+    eatUntil('rBrace', 'identifier', (param) => {
       params[param.value] = {
         position: [param.line, param.start]
       }
-      lookAhead = tokenizer.lookAhead()
-
-      if (lookAhead && lookAhead.type === 'comma') {
-        eat('comma')
-      }
-      lookAhead = tokenizer.lookAhead()
-    }
+    })
     const paramEnd = eat('rBrace')
 
     return {
@@ -120,14 +116,23 @@ function main(source: string) {
     }
   }
   function componentCall(): ComponentCall {
+    const params: ComponentCallParams[] = []
+
     const name = eat('identifier')
     const paramStart = eat('lBrace')
+    eatUntil('rBrace', 'string', (param) => {
+      params.push({
+        kind: 'string',
+        position: [param.line, param.start],
+        value: param.value
+      })
+    })
     const paramEnd = eat('rBrace')
 
     return {
       kind: 'componentCall',
       name: name.value,
-      params: [],
+      params,
       meta: {
         namePosition: [name.line, name.start],
         openParamPosition: [paramStart.line, paramStart.start],
