@@ -86,7 +86,7 @@ test('component with multiple params AST', () => {
   expect(result.body[0]).toStrictEqual(expected)
 })
 
-test('component with multiple params AST with dangling comma', () => {
+test('component with multiple params AST with dangling comma AST', () => {
   const parse = parser('component example (name, example,) {}')
   const result = parse.program()
 
@@ -115,7 +115,7 @@ test('component with multiple params AST with dangling comma', () => {
   expect(result.body[0]).toStrictEqual(expected)
 })
 
-test('component with an empty component call', () => {
+test('component with an empty component call AST', () => {
   const parse = parser(`component example () {
   Text()
 }`)
@@ -150,7 +150,7 @@ test('component with an empty component call', () => {
   expect(result.body[0]).toStrictEqual(expected)
 })
 
-test('component with an component call with string arg', () => {
+test('component with an component call with string arg AST', () => {
   const parse = parser(`component example () {
   Text("hi")
 }`)
@@ -175,6 +175,98 @@ test('component with an component call with string arg', () => {
           namePosition: [2, 3],
           openParamPosition: [2, 7],
           closeParamPosition: [2, 12],
+        }
+      }
+    ],
+    meta: {
+      keywordPosition: [1, 1],
+      namePosition: [1, 11],
+      openParamPosition: [1, 19],
+      closeParamPosition: [1, 20],
+      openBodyPosition: [1, 22],
+      closeBodyPosition: [3, 1],
+    }
+  }
+
+  expect(result.body[0]).toStrictEqual(expected)
+})
+
+test('component with an component call with many string args AST', () => {
+  const parse = parser(`component example () {
+  Text("hi", "hi again :)")
+}`)
+  const result = parse.program()
+
+  const expected: ComponentAST = {
+    kind: 'component',
+    name: 'example',
+    params: {},
+    body: [
+      {
+        kind: 'componentCall',
+        name: 'Text',
+        params: [
+          {
+            kind: 'string',
+            value: '"hi"',
+            position: [2, 8],
+          },
+          {
+            kind: 'string',
+            value: '"hi again :)"',
+            position: [2, 14],
+          }
+        ],
+        meta: {
+          namePosition: [2, 3],
+          openParamPosition: [2, 7],
+          closeParamPosition: [2, 27],
+        }
+      }
+    ],
+    meta: {
+      keywordPosition: [1, 1],
+      namePosition: [1, 11],
+      openParamPosition: [1, 19],
+      closeParamPosition: [1, 20],
+      openBodyPosition: [1, 22],
+      closeBodyPosition: [3, 1],
+    }
+  }
+
+  expect(result.body[0]).toStrictEqual(expected)
+})
+
+test('component with an component call with many string args and a dangling comma AST', () => {
+  const parse = parser(`component example () {
+  Text("hi", "hi again :)",)
+}`)
+  const result = parse.program()
+
+  const expected: ComponentAST = {
+    kind: 'component',
+    name: 'example',
+    params: {},
+    body: [
+      {
+        kind: 'componentCall',
+        name: 'Text',
+        params: [
+          {
+            kind: 'string',
+            value: '"hi"',
+            position: [2, 8],
+          },
+          {
+            kind: 'string',
+            value: '"hi again :)"',
+            position: [2, 14],
+          }
+        ],
+        meta: {
+          namePosition: [2, 3],
+          openParamPosition: [2, 7],
+          closeParamPosition: [2, 28],
         }
       }
     ],
