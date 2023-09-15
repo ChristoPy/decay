@@ -1,5 +1,7 @@
+import { Token } from "./token"
+
 export interface Match {
-  type: string
+  type: Token['type']
   value: string
   length: number
 }

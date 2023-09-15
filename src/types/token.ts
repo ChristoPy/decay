@@ -1,5 +1,5 @@
 export interface Token {
-  type: string
+  type: 'ignore' | 'keyword' | 'identifier' | 'string' | 'lBrace' | 'rBrace' | 'lBracket' | 'rBracket' | 'comma'
   value: string
   line: number
   start: number

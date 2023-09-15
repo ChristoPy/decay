@@ -52,7 +52,7 @@ export interface ComponentParams {
 }
 
 export interface ComponentCallParams {
-  kind: 'string'
+  kind: 'string' | 'identifier'
   value: any
   position: TokenPosition
 }

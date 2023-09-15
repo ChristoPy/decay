@@ -1,7 +1,12 @@
 import { Match } from "../types/parser"
 import { Token } from "../types/token"
 
-const TOKENS = [
+interface TokenDefinition {
+  type: Token['type']
+  pattern: RegExp
+}
+
+const TOKENS: TokenDefinition[] = [
   {
     type: 'ignore',
     pattern: /^(\s|\t|\n)/,
