@@ -1,4 +1,4 @@
-import { ComponentAST, ComponentCall, ComponentCallParams, ComponentParam, ComponentParams, FinalAST, TokenPosition } from '../types/ast'
+import { ComponentAST, ComponentCall, ComponentCallParams, ComponentParams, FinalAST, TokenPosition } from '../types/ast'
 import { Token } from '../types/token'
 import Tokenize from './tokenizer'
 
@@ -120,13 +120,18 @@ function main(source: string) {
 
     const name = eat('identifier')
     const paramStart = eat('lBrace')
-    eatUntil('rBrace', 'string', (param) => {
-      params.push({
-        kind: 'string',
-        position: [param.line, param.start],
-        value: param.value
-      })
-    })
+    let lookAhead = tokenizer.lookAhead()
+
+    while(lookAhead && lookAhead.type != 'rBrace') {
+      const param = componentCallParam()
+      params.push(param)
+      lookAhead = tokenizer.lookAhead()
+
+      if (lookAhead && lookAhead.type === 'comma') {
+        eat('comma')
+      }
+      lookAhead = tokenizer.lookAhead()
+    }
     const paramEnd = eat('rBrace')
 
     return {
@@ -139,6 +144,22 @@ function main(source: string) {
         closeParamPosition: [paramEnd.line, paramEnd.start]
       }
     }
+  }
+  function componentCallParam(): ComponentCallParams {
+    const lookup = ['string', 'identifier']
+    const nextToken = tokenizer.lookAhead()
+
+    if (nextToken && lookup.includes(nextToken.type)) {
+      const param = eat(nextToken.type)
+
+      return {
+        kind: param.type as ComponentCallParams['kind'],
+        position: [param.line, param.start],
+        value: param.value
+      }
+    }
+
+    eat('string')
   }
 
   function program(): FinalAST {

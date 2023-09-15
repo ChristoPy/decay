@@ -191,9 +191,9 @@ test('component with an component call with string arg AST', () => {
   expect(result.body[0]).toStrictEqual(expected)
 })
 
-test('component with an component call with many string args AST', () => {
+test('component with an component call with mixed args AST', () => {
   const parse = parser(`component example () {
-  Text("hi", "hi again :)")
+  Text("hi", hi)
 }`)
   const result = parse.program()
 
@@ -212,15 +212,15 @@ test('component with an component call with many string args AST', () => {
             position: [2, 8],
           },
           {
-            kind: 'string',
-            value: '"hi again :)"',
+            kind: 'identifier',
+            value: 'hi',
             position: [2, 14],
           }
         ],
         meta: {
           namePosition: [2, 3],
           openParamPosition: [2, 7],
-          closeParamPosition: [2, 27],
+          closeParamPosition: [2, 16],
         }
       }
     ],
@@ -237,9 +237,9 @@ test('component with an component call with many string args AST', () => {
   expect(result.body[0]).toStrictEqual(expected)
 })
 
-test('component with an component call with many string args and a dangling comma AST', () => {
+test('component with an component call with mixed args a dangling comma AST', () => {
   const parse = parser(`component example () {
-  Text("hi", "hi again :)",)
+  Text("hi", hi,)
 }`)
   const result = parse.program()
 
@@ -258,15 +258,15 @@ test('component with an component call with many string args and a dangling comm
             position: [2, 8],
           },
           {
-            kind: 'string',
-            value: '"hi again :)"',
+            kind: 'identifier',
+            value: 'hi',
             position: [2, 14],
           }
         ],
         meta: {
           namePosition: [2, 3],
           openParamPosition: [2, 7],
-          closeParamPosition: [2, 28],
+          closeParamPosition: [2, 17],
         }
       }
     ],
