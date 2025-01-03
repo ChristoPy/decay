@@ -1,4 +1,4 @@
-import { AST, ASTNode, ComponentBlockNode, ComponentNode, FunctionCallNode, ViewNode } from '../types/ast'
+import { ComponentAST, ComponentCall, ComponentCallParams, ComponentParams, FinalAST, NestedComponentCall, NestedComponentCallParams, TokenPosition } from '../types/ast'
 import { Token } from '../types/token'
 import Tokenize from './tokenizer'
 
@@ -16,16 +16,19 @@ function main(source: string) {
 
     throw new Error(`Expected ${type} but got ${token?.type}`)
   }
-  function eatOr(left: string, right: string) {
-    const token = tokenizer.nextToken()
-    if (token && (token.type === left || token.type === right)) {
-      return token
-    }
-    if (!token) {
-      throw new Error(`Expected ${left} or ${right} but got EOF`)
-    }
+  function eatUntil(limiter: string, predicate: string, callback: (x: Token) => void) {
+    let lookAhead = tokenizer.lookAhead()
 
-    throw new Error(`Expected ${left} or ${right} but got ${token?.type}`)
+    while (lookAhead && lookAhead.type != limiter) {
+      const param = eat(predicate)
+      callback(param)
+      lookAhead = tokenizer.lookAhead()
+
+      if (lookAhead && lookAhead.type === 'comma') {
+        eat('comma')
+      }
+      lookAhead = tokenizer.lookAhead()
+    }
   }
 
   function statement() {
@@ -34,199 +37,188 @@ function main(source: string) {
       return null
     }
 
-    if (lookAhead?.type === 'keyword') {
-      switch (lookAhead.value) {
-        case 'component':
-          return component()
-        case 'view':
-          return view()
-        default:
-          throw new Error(`Unknown keyword ${lookAhead.value}`)
+    const lookup = {
+      'component': component
+    }
+
+    if (lookAhead.type === 'keyword') {
+      // @ts-ignore
+      const statementMethod = lookup[lookAhead.value]
+      if (!statementMethod) {
+        throw new Error(`Unknown keyword ${lookAhead.value}`)
       }
+
+      return statementMethod()
     }
 
     throw new Error(`Unknown statement ${lookAhead?.value}`)
   }
 
-  function component(): ComponentNode {
+  function component(): ComponentAST {
     const keyword = eat('keyword')
     const name = eat('identifier')
     const params = componentParams()
-    const block = componentBlock()
+    const calls = componentBlock()
 
     return {
-      type: 'component',
-      value: name.value,
-      params: params,
-      block: block,
-      line: keyword.line,
-      start: keyword.start,
-      end: keyword.end,
+      kind: 'component',
+      name: name.value,
+      params: params.params,
+      body: calls.calls,
+      meta: {
+        keywordPosition: [keyword.line, keyword.start],
+        namePosition: [name.line, name.start],
+        openParamPosition: params.openParamPosition,
+        closeParamPosition: params.closeParamPosition,
+        openBodyPosition: calls.openBlockPosition,
+        closeBodyPosition: calls.closeBlockPosition,
+      }
     }
   }
-  function componentParams(): ASTNode[] {
-    if (tokenizer.lookAhead()?.type !== 'lBrace') {
-      return []
+  function componentParams() {
+    let params: ComponentParams = {}
+
+    const paramStart = eat('lBrace')
+    eatUntil('rBrace', 'identifier', (param) => {
+      params[param.value] = {
+        position: [param.line, param.start]
+      }
+    })
+    const paramEnd = eat('rBrace')
+
+    return {
+      openParamPosition: [paramStart.line, paramStart.start] as TokenPosition,
+      closeParamPosition: [paramEnd.line, paramEnd.start] as TokenPosition,
+      params
     }
+  }
+  function componentBlock() {
+    let calls: ComponentCall[] = []
+    const blockStart = eat('lBracket')
+    let lookAhead = tokenizer.lookAhead()
 
-    let params: ASTNode[] = []
-    eat('lBrace')
+    while (lookAhead && lookAhead.type != 'rBracket') {
+      const call = componentCall()
+      calls.push(call)
 
-    while (tokenizer.hasTokens()) {
-      const token = tokenizer.lookAhead()
-      if (token?.type === 'rBrace') {
-        break
-      }
+      lookAhead = tokenizer.lookAhead()
 
-      const param = eat('identifier')
-      if (!param) {
-        break
-      }
-
-      params.push({
-        type: 'identifier',
-        value: param.value,
-        line: 0,
-        start: param.start,
-        end: param.end,
-      })
-
-      const nextToken = tokenizer.lookAhead()
-      if (nextToken?.type === 'comma') {
+      if (lookAhead && lookAhead.type === 'comma') {
         eat('comma')
       }
+      lookAhead = tokenizer.lookAhead()
     }
-
-    eat('rBrace')
-
-    return params
-  }
-
-  function componentBlock(): ComponentBlockNode {
-    const lBracket = eat('lBracket')
-
-    const nodes: ASTNode[] = []
-    let rBracket: Token | null = null
-
-    let closed = false
-    while (tokenizer.hasTokens()) {
-      const token = tokenizer.lookAhead()
-      if (token?.type === 'rBracket') {
-        rBracket = eat('rBracket')
-        closed = true
-        break
-      }
-      const statements = functionCall()
-      if (!statements) {
-        break
-      }
-      nodes.push(statements)
-    }
-
-    if (!closed) {
-      throw new Error('Expected ) but got EOF')
-    }
+    const blockEnd = eat('rBracket')
 
     return {
-      type: 'componentBlock',
-      children: nodes,
-      line: lBracket.line,
-      start: lBracket.start,
-      end: rBracket!.end,
-    } as ComponentBlockNode
+      calls,
+      openBlockPosition: [blockStart.line, blockStart.start] as TokenPosition,
+      closeBlockPosition: [blockEnd.line, blockEnd.start] as TokenPosition,
+    }
   }
-  function functionCall(): FunctionCallNode {
-    let params: ASTNode[] = []
+  function componentCall(): ComponentCall {
+    const params: ComponentCallParams[] = []
 
     const name = eat('identifier')
-    const lBrace = eat('lBrace')
+    const paramStart = eat('lBrace')
+    let lookAhead = tokenizer.lookAhead()
 
-    while (tokenizer.hasTokens()) {
-      const token = tokenizer.lookAhead()
-      if (token?.type === 'rBrace') {
-        break
-      }
+    while (lookAhead && lookAhead.type != 'rBrace') {
+      const param = componentCallParams()
+      params.push(param)
+      lookAhead = tokenizer.lookAhead()
 
-      const param = eatOr('string', 'identifier')
-      if (!param) {
-        break
-      }
-
-      params.push({
-        type: param.type,
-        value: param.value,
-        line: 0,
-        start: param.start,
-        end: param.end,
-      })
-
-      const nextToken = tokenizer.lookAhead()
-      if (nextToken?.type === 'comma') {
+      if (lookAhead && lookAhead.type === 'comma') {
         eat('comma')
       }
+      lookAhead = tokenizer.lookAhead()
     }
+    const paramEnd = eat('rBrace')
 
-    const rBrace = eat('rBrace')
+    let nestedCall: NestedComponentCall | null = null
+    lookAhead = tokenizer.lookAhead()
+    if (lookAhead && lookAhead.type === 'atom') {
+      nestedCall = nestedComponentCall()
+    }
 
     return {
-      type: 'functionCall',
-      value: name.value,
-      params: params,
-      line: 0,
-      start: lBrace.start,
-      end: rBrace.end,
-    }
-  }
-
-  function view(): ViewNode {
-    const keyword = eat('keyword')
-    const name = eat('identifier')
-    const block = viewBlock()
-
-    return {
-      type: 'view',
-      value: name.value,
-      block: block,
-      line: keyword.line,
-      start: keyword.start,
-      end: keyword.end,
-    }
-  }
-  function viewBlock(): ComponentBlockNode {
-    const lBracket = eat('lBracket')
-
-    const nodes: ASTNode[] = []
-    let rBracket: Token | null = null
-
-    let closed = false
-    while (tokenizer.hasTokens()) {
-      const token = tokenizer.lookAhead()
-      if (token?.type === 'rBracket') {
-        rBracket = eat('rBracket')
-        closed = true
-        break
+      kind: 'componentCall',
+      name: name.value,
+      params,
+      nestedCall,
+      meta: {
+        namePosition: [name.line, name.start],
+        openParamPosition: [paramStart.line, paramStart.start],
+        closeParamPosition: [paramEnd.line, paramEnd.start]
       }
-      const statements = functionCall()
-      if (!statements) {
-        break
-      }
-      nodes.push(statements)
     }
+  }
+  function nestedComponentCall(): NestedComponentCall {
+    const params: NestedComponentCallParams[] = []
 
-    if (!closed) {
-      throw new Error('Expected ) but got EOF')
+    const name = eat('atom')
+    const paramStart = eat('lBrace')
+    let lookAhead = tokenizer.lookAhead()
+
+    while (lookAhead && lookAhead.type != 'rBrace') {
+      const param = nestedComponentCallParams()
+      params.push(param)
+      lookAhead = tokenizer.lookAhead()
+
+      if (lookAhead && lookAhead.type === 'comma') {
+        eat('comma')
+      }
+      lookAhead = tokenizer.lookAhead()
     }
+    const paramEnd = eat('rBrace')
 
     return {
-      type: 'viewBlock',
-      children: nodes,
-      line: lBracket.line,
-      start: lBracket.start,
-      end: rBracket!.end,
-    } as ComponentBlockNode
+      kind: 'nestedComponentCall',
+      name: name.value,
+      params,
+      nestedCall: null,
+      meta: {
+        namePosition: [name.line, name.start],
+        openParamPosition: [paramStart.line, paramStart.start],
+        closeParamPosition: [paramEnd.line, paramEnd.start]
+      }
+    }
   }
-  function program(): AST {
-    const tokens: ASTNode[] = []
+  function componentCallParams(): ComponentCallParams {
+    const lookup = ['string', 'identifier']
+    const nextToken = tokenizer.lookAhead()
+
+    if (nextToken && lookup.includes(nextToken.type)) {
+      const param = eat(nextToken.type)
+
+      return {
+        kind: param.type as ComponentCallParams['kind'],
+        position: [param.line, param.start],
+        value: param.value
+      }
+    }
+
+    eat('string')
+  }
+  function nestedComponentCallParams(): NestedComponentCallParams {
+    const lookup = ['string', 'atom']
+    const nextToken = tokenizer.lookAhead()
+
+    if (nextToken && lookup.includes(nextToken.type)) {
+      const param = eat(nextToken.type)
+
+      return {
+        kind: param.type as NestedComponentCallParams['kind'],
+        position: [param.line, param.start],
+        value: param.value
+      }
+    }
+
+    eat('string')
+  }
+
+  function program(): FinalAST {
+    const tokens: ComponentAST[] = []
     while (tokenizer.hasTokens()) {
       const statements = statement()
       if (!statements) {
@@ -236,8 +228,7 @@ function main(source: string) {
     }
 
     return {
-      root: true,
-      children: tokens,
+      body: tokens,
     }
   }
 

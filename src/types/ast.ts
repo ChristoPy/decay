@@ -29,21 +29,59 @@ export interface AST {
 
 // ===============
 
+export type TokenPosition = [number, number]
 
 export interface Meta {
-  keywordPosition: [number, number],
-  namePosition: [number, number],
-  closeBracePosition: [number, number],
+  namePosition: TokenPosition
+  openParamPosition: TokenPosition
+  closeParamPosition: TokenPosition
 }
 
 export interface ComponentMeta extends Meta {
-  openBracePosition: [number, number],
+  keywordPosition: TokenPosition
+  openBodyPosition: TokenPosition
+  closeBodyPosition: TokenPosition
+}
+
+export interface ComponentParam {
+  position: TokenPosition
+}
+
+export interface ComponentParams {
+  [key: string]: ComponentParam
+}
+
+export interface ComponentCallParams {
+  kind: 'string' | 'identifier'
+  value: any
+  position: TokenPosition
+}
+export interface ComponentCall {
+  kind: 'componentCall'
+  name: string
+  nestedCall: NestedComponentCall | null,
+  params: ComponentCallParams[]
+  meta: Meta
+}
+
+export interface NestedComponentCallParams {
+  kind: 'string' | 'identifier' | 'atom'
+  value: any
+  position: TokenPosition
+}
+export interface NestedComponentCall {
+  kind: 'nestedComponentCall'
+  name: string
+  nestedCall: ComponentCall | null,
+  params: NestedComponentCallParams[]
+  meta: Meta
 }
 
 export interface ComponentAST {
-  name: 'component'
-  params: {}
-  body: []
+  kind: 'component'
+  name: string
+  params: ComponentParams
+  body: ComponentCall[]
   meta: ComponentMeta
 }
 

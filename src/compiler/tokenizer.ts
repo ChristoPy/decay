@@ -1,6 +1,12 @@
+import { Match } from "../types/parser"
 import { Token } from "../types/token"
 
-const TOKENS = [
+interface TokenDefinition {
+  type: Token['type']
+  pattern: RegExp
+}
+
+const TOKENS: TokenDefinition[] = [
   {
     type: 'ignore',
     pattern: /^(\s|\t|\n)/,
@@ -20,6 +26,10 @@ const TOKENS = [
   {
     type: 'identifier',
     pattern: /^([a-zA-Z_][a-zA-Z0-9_]*)/,
+  },
+  {
+    type: 'atom',
+    pattern: /^\.([a-zA-Z_][a-zA-Z0-9_-]*)/
   },
   {
     type: 'string',
@@ -71,26 +81,51 @@ function main(source: string) {
   let column = 1
 
   let cursor = 0
-  let lookAheadCursor = 0
+
+  function reset(param: { line: number, cursor: number, column: number }) {
+    line = param.line
+    column = param.column
+    cursor = param.cursor
+  }
 
   function lookAhead(): Token | null {
-    let slice = content.slice(lookAheadCursor)
-    const matched = getToken(slice)
-    if (!matched) {
+    if (!hasTokens()) {
       return null
     }
-    if (matched.type === 'ignore') {
-      lookAheadCursor += matched.length
-      return lookAhead()
+
+    const initialLine = line
+    const initialColumn = column
+    const initialCursor = cursor
+
+    let slice = content.slice(cursor)
+    const matched = getToken(slice)
+    if (matched) {
+      column += matched.length
+      cursor += matched.length
+
+      if (matched.value == '\n') {
+        line++
+        column = 1
+      }
+      if (matched.type === 'ignore') {
+        const result = nextToken()
+        reset({ line: initialLine, cursor: initialCursor, column: initialColumn })
+        return result
+      }
+
+      const result = {
+        type: matched.type,
+        value: matched.value,
+        line,
+        start: column - matched.length,
+        end: column,
+      }
+
+      reset({ line: initialLine, cursor: initialCursor, column: initialColumn })
+      return result
     }
 
-    return {
-      type: matched.type || 'eof',
-      value: matched.value || '',
-      line: 0,
-      start: cursor,
-      end: cursor + matched.length || 0,
-    }
+    return null
   }
   function hasTokens(): Boolean {
     return cursor < content.length
@@ -105,7 +140,6 @@ function main(source: string) {
     if (matched) {
       column += matched.length
       cursor += matched.length
-      lookAheadCursor = cursor
 
       if (matched.value == '\n') {
         line++
