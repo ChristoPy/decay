@@ -59,7 +59,21 @@ export interface ComponentCallParams {
 export interface ComponentCall {
   kind: 'componentCall'
   name: string
+  nestedCall: NestedComponentCall | null,
   params: ComponentCallParams[]
+  meta: Meta
+}
+
+export interface NestedComponentCallParams {
+  kind: 'string' | 'identifier' | 'atom'
+  value: any
+  position: TokenPosition
+}
+export interface NestedComponentCall {
+  kind: 'nestedComponentCall'
+  name: string
+  nestedCall: ComponentCall | null,
+  params: NestedComponentCallParams[]
   meta: Meta
 }
 
