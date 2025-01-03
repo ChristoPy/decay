@@ -1,4 +1,4 @@
-import { ComponentAST, ComponentCall, ComponentCallParams, ComponentParams, FinalAST, TokenPosition } from '../types/ast'
+import { ComponentAST, ComponentCall, ComponentCallParams, ComponentParams, FinalAST, NestedComponentCall, NestedComponentCallParams, TokenPosition } from '../types/ast'
 import { Token } from '../types/token'
 import Tokenize from './tokenizer'
 
@@ -19,7 +19,7 @@ function main(source: string) {
   function eatUntil(limiter: string, predicate: string, callback: (x: Token) => void) {
     let lookAhead = tokenizer.lookAhead()
 
-    while(lookAhead && lookAhead.type != limiter) {
+    while (lookAhead && lookAhead.type != limiter) {
       const param = eat(predicate)
       callback(param)
       lookAhead = tokenizer.lookAhead()
@@ -42,6 +42,7 @@ function main(source: string) {
     }
 
     if (lookAhead.type === 'keyword') {
+      // @ts-ignore
       const statementMethod = lookup[lookAhead.value]
       if (!statementMethod) {
         throw new Error(`Unknown keyword ${lookAhead.value}`)
@@ -122,8 +123,45 @@ function main(source: string) {
     const paramStart = eat('lBrace')
     let lookAhead = tokenizer.lookAhead()
 
-    while(lookAhead && lookAhead.type != 'rBrace') {
-      const param = componentCallParam()
+    while (lookAhead && lookAhead.type != 'rBrace') {
+      const param = componentCallParams()
+      params.push(param)
+      lookAhead = tokenizer.lookAhead()
+
+      if (lookAhead && lookAhead.type === 'comma') {
+        eat('comma')
+      }
+      lookAhead = tokenizer.lookAhead()
+    }
+    const paramEnd = eat('rBrace')
+
+    let nestedCall: NestedComponentCall | null = null
+    lookAhead = tokenizer.lookAhead()
+    if (lookAhead && lookAhead.type === 'atom') {
+      nestedCall = nestedComponentCall()
+    }
+
+    return {
+      kind: 'componentCall',
+      name: name.value,
+      params,
+      nestedCall,
+      meta: {
+        namePosition: [name.line, name.start],
+        openParamPosition: [paramStart.line, paramStart.start],
+        closeParamPosition: [paramEnd.line, paramEnd.start]
+      }
+    }
+  }
+  function nestedComponentCall(): NestedComponentCall {
+    const params: NestedComponentCallParams[] = []
+
+    const name = eat('atom')
+    const paramStart = eat('lBrace')
+    let lookAhead = tokenizer.lookAhead()
+
+    while (lookAhead && lookAhead.type != 'rBrace') {
+      const param = nestedComponentCallParams()
       params.push(param)
       lookAhead = tokenizer.lookAhead()
 
@@ -135,9 +173,10 @@ function main(source: string) {
     const paramEnd = eat('rBrace')
 
     return {
-      kind: 'componentCall',
+      kind: 'nestedComponentCall',
       name: name.value,
       params,
+      nestedCall: null,
       meta: {
         namePosition: [name.line, name.start],
         openParamPosition: [paramStart.line, paramStart.start],
@@ -145,7 +184,7 @@ function main(source: string) {
       }
     }
   }
-  function componentCallParam(): ComponentCallParams {
+  function componentCallParams(): ComponentCallParams {
     const lookup = ['string', 'identifier']
     const nextToken = tokenizer.lookAhead()
 
@@ -154,6 +193,22 @@ function main(source: string) {
 
       return {
         kind: param.type as ComponentCallParams['kind'],
+        position: [param.line, param.start],
+        value: param.value
+      }
+    }
+
+    eat('string')
+  }
+  function nestedComponentCallParams(): NestedComponentCallParams {
+    const lookup = ['string', 'atom']
+    const nextToken = tokenizer.lookAhead()
+
+    if (nextToken && lookup.includes(nextToken.type)) {
+      const param = eat(nextToken.type)
+
+      return {
+        kind: param.type as NestedComponentCallParams['kind'],
         position: [param.line, param.start],
         value: param.value
       }
