@@ -28,6 +28,10 @@ const TOKENS: TokenDefinition[] = [
     pattern: /^([a-zA-Z_][a-zA-Z0-9_]*)/,
   },
   {
+    type: 'atom',
+    pattern: /^\.([a-zA-Z_][a-zA-Z0-9_-]*)/
+  },
+  {
     type: 'string',
     pattern: /^"([^"]*)"/,
   },

@@ -39,7 +39,9 @@ name
 "string"
 ()
 {}
-,`
+,
+.bg-red
+`
   )
   expect(tokenize.hasTokens()).toBe(true)
 
@@ -132,6 +134,16 @@ name
   }
   expect(tokenize.lookAhead()).toStrictEqual(comma)
   expect(tokenize.nextToken()).toStrictEqual(comma)
+
+  const atom = {
+    end: 8,
+    line: 9,
+    start: 1,
+    type: "atom",
+    value: ".bg-red",
+  }
+  expect(tokenize.lookAhead()).toStrictEqual(atom)
+  expect(tokenize.nextToken()).toStrictEqual(atom)
 
   expect(tokenize.lookAhead()).toBe(null)
 })
